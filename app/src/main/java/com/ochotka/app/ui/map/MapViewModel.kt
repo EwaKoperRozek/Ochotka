@@ -56,9 +56,16 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshLocation() {
         viewModelScope.launch {
             if (!locationHelper.hasPermission()) return@launch
-            val loc = locationHelper.getCurrentLocation()
+
             val current = _uiState.value ?: return@launch
-            _uiState.value = current.copy(userLocation = loc)
+            val loc = locationHelper.getCurrentLocation()
+                ?: locationHelper.getLastLocation()
+
+            _uiState.value = current.copy(
+                userLocation = loc,
+                error = if (loc == null) "Nie udało się pobrać lokalizacji." else null
+            )
         }
     }
+
 }

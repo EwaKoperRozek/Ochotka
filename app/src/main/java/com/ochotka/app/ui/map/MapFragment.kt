@@ -99,6 +99,18 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         }
 
         enableMapLocation()
+        if (
+            ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            viewModel.refreshLocation()
+        }
 
         // Jeśli dane już załadowane, narysuj markery
         val state = viewModel.uiState.value
