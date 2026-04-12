@@ -12,12 +12,10 @@
         android:orientation="vertical"
         android:paddingBottom="24dp">
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/primary_blue"
-            android:gravity="center"
-            android:orientation="vertical"
             android:paddingTop="40dp"
             android:paddingBottom="32dp">
 
@@ -26,21 +24,27 @@
                 android:layout_width="88dp"
                 android:layout_height="88dp"
                 android:background="@drawable/bg_avatar_placeholder"
-                android:clickable="true"
                 android:contentDescription="Zdjęcie profilowe"
-                android:focusable="true"
                 android:padding="4dp"
                 android:scaleType="centerCrop"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
-            <TextView
-                android:id="@+id/tvChangePhoto"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+            <ImageButton
+                android:id="@+id/btnProfileSettings"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_marginTop="8dp"
-                android:text="Dodaj lub zmień zdjęcie"
-                android:textColor="#E3F2FD"
-                android:textSize="12sp" />
+                android:layout_marginEnd="12dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Ustawienia profilu"
+                android:padding="8dp"
+                android:src="@android:drawable/ic_menu_manage"
+                android:tint="@color/white"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
                 android:id="@+id/tvUserName"
@@ -50,7 +54,10 @@
                 android:text="Mój profil"
                 android:textColor="@color/white"
                 android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/ivProfilePhoto" />
 
             <TextView
                 android:id="@+id/tvUserSubtitle"
@@ -59,8 +66,11 @@
                 android:layout_marginTop="4dp"
                 android:text="Odkrywca smaków Poznania"
                 android:textColor="#BBDEFB"
-                android:textSize="13sp" />
-        </LinearLayout>
+                android:textSize="13sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvUserName" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -104,63 +114,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginTop="20dp"
-            app:cardBackgroundColor="@color/white"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="3dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Twoje dane"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilUserName"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:boxBackgroundColor="@color/background_cream"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusTopEnd="16dp"
-                    app:boxCornerRadiusTopStart="16dp">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etUserName"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Wpisz swoje imię"
-                        android:imeOptions="actionDone"
-                        android:inputType="textCapWords"
-                        android:maxLines="1" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSaveProfile"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="Zapisz"
-                    android:textColor="@color/white"
-                    app:backgroundTint="@color/primary_blue"
-                    app:cornerRadius="12dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="match_parent"

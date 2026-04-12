@@ -6,8 +6,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -73,14 +76,24 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupProfileActions() {
-        binding.ivProfilePhoto.setOnClickListener {
-            imagePickerLauncher.launch("image/*")
-        }
-        binding.tvChangePhoto.setOnClickListener {
-            imagePickerLauncher.launch("image/*")
-        }
-        binding.btnSaveProfile.setOnClickListener {
-            saveUserName()
+        binding.btnProfileSettings.setOnClickListener { anchor ->
+            val popup = PopupMenu(requireContext(), anchor)
+            popup.menu.add(0, 1, 0, "Zmień zdjęcie")
+            popup.menu.add(0, 2, 1, "Zmień imię")
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    1 -> {
+                        imagePickerLauncher.launch("image/*")
+                        true
+                    }
+                    2 -> {
+                        showEditNameDialog()
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popup.show()
         }
     }
 
@@ -89,10 +102,6 @@ class ProfileFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
                     binding.tvUserName.text = state.userName.ifBlank { "Mój profil" }
-                    if (binding.etUserName.text?.toString() != state.userName) {
-                        binding.etUserName.setText(state.userName)
-                        binding.etUserName.setSelection(binding.etUserName.text?.length ?: 0)
-                    }
                     loadProfileImage(state.profileImagePath)
                     binding.tvFavCount.text = state.favoriteCount.toString()
                     binding.tvRestaurantCount.text = "Restauracji w bazie: ${state.restaurantCount}"
@@ -116,10 +125,23 @@ class ProfileFragment : Fragment() {
         }
     }
 
-    private fun saveUserName() {
-        val name = binding.etUserName.text?.toString()?.trim().orEmpty()
-        viewModel.saveUserName(name)
-        Toast.makeText(requireContext(), "Zapisano imię", Toast.LENGTH_SHORT).show()
+    private fun showEditNameDialog() {
+        val input = EditText(requireContext()).apply {
+            hint = "Wpisz swoje imię"
+            setText(viewModel.uiState.value.userName)
+            setSelection(text.length)
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Zmień imię")
+            .setView(input)
+            .setNegativeButton("Anuluj", null)
+            .setPositiveButton("Zapisz") { _, _ ->
+                val name = input.text?.toString()?.trim().orEmpty()
+                viewModel.saveUserName(name)
+                Toast.makeText(requireContext(), "Zapisano imię", Toast.LENGTH_SHORT).show()
+            }
+            .show()
     }
 
     private fun saveProfileImage(uri: Uri) {
