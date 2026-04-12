@@ -4,11 +4,6 @@
     <item
         android:id="@+id/homeFragment"
         android:icon="@drawable/ic_nav_home"
-        android:title="Główna" />
-
-    <item
-        android:id="@+id/mapFragment"
-        android:icon="@drawable/ic_nav_map"
         android:title="Mapa" />
 
     <item
