@@ -51,7 +51,8 @@
             android:id="@+id/fabMyLocation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="96dp"
             android:contentDescription="Moja lokalizacja"
             android:src="@drawable/ic_my_location"
             app:backgroundTint="@color/white"
@@ -94,6 +95,23 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
 
+                <TextView
+                    android:id="@+id/tvMatchedDishesLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Pasujące dania"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvMatchedDishes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:nestedScrollingEnabled="false" />
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRestaurantDetails"
                     android:layout_width="match_parent"
@@ -122,12 +140,13 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@drawable/bg_chip_category"
+            android:elevation="6dp"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingHorizontal="20dp"
             android:paddingTop="16dp"
-            android:paddingBottom="10dp"
-            android:background="@drawable/bg_chip_category">
+            android:paddingBottom="10dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -222,53 +241,6 @@
                 app:singleSelection="true" />
         </HorizontalScrollView>
     </LinearLayout>
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/layoutSearchContent"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        android:visibility="gone"
-        app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="6dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/layoutTopOverlay">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:paddingBottom="8dp">
-
-            <TextView
-                android:id="@+id/tvSearchEmpty"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="40dp"
-                android:text="Nie znaleziono dań 😕\nSpróbuj innego zapytania."
-                android:textAlignment="center"
-                android:textColor="@color/text_secondary"
-                android:textSize="15sp"
-                android:visibility="gone" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvSearchResults"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:clipToPadding="false"
-                android:nestedScrollingEnabled="false"
-                android:paddingHorizontal="16dp"
-                android:paddingTop="8dp" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
 
     <ProgressBar
         android:id="@+id/progressBar"

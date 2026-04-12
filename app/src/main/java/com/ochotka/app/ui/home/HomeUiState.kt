@@ -7,7 +7,8 @@ sealed class HomeUiState {
 
     data class Success(
         val searchResults: List<SearchResultItem>?,
-        val selectedCategory: String?
+        val selectedCategory: String?,
+        val activeQuery: String = ""
     ) : HomeUiState()
 
     data class Error(val message: String) : HomeUiState()

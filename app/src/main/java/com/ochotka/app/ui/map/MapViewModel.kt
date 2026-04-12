@@ -8,39 +8,35 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.ochotka.app.common.utils.LocationHelper
 import com.ochotka.app.data.model.Restaurant
-import com.ochotka.app.data.repository.RestaurantRepository
 import kotlinx.coroutines.launch
 
 data class MapUiState(
     val restaurants: List<Restaurant> = emptyList(),
     val userLocation: Location? = null,
-    val isLoading: Boolean = true,
+    val isLoading: Boolean = false,
     val error: String? = null
 )
 
 class MapViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = RestaurantRepository.getInstance(application)
     private val locationHelper = LocationHelper(application)
 
     private val _uiState = MutableLiveData(MapUiState())
     val uiState: LiveData<MapUiState> = _uiState
 
     init {
-        loadRestaurants()
+        loadInitialState()
     }
 
-    fun loadRestaurants() {
+    private fun loadInitialState() {
         viewModelScope.launch {
-            _uiState.value = MapUiState(isLoading = true)
             try {
-                val restaurants = repository.getAllRestaurants()
                 var userLocation: Location? = null
                 if (locationHelper.hasPermission()) {
                     userLocation = locationHelper.getLastLocation()
                 }
                 _uiState.value = MapUiState(
-                    restaurants = restaurants,
+                    restaurants = emptyList(),
                     userLocation = userLocation,
                     isLoading = false
                 )
@@ -51,6 +47,15 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
         }
+    }
+
+    fun setRestaurants(restaurants: List<Restaurant>) {
+        val current = _uiState.value ?: MapUiState(isLoading = false)
+        _uiState.value = current.copy(
+            restaurants = restaurants,
+            isLoading = false,
+            error = null
+        )
     }
 
     fun refreshLocation() {

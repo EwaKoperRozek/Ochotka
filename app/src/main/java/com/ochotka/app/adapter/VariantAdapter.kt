@@ -23,7 +23,7 @@ class VariantAdapter : ListAdapter<Variant, VariantAdapter.ViewHolder>(DiffCallb
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(variant: Variant) {
-            binding.tvSize.text = variant.size
+            binding.tvSize.text = variant.size.ifBlank { "Cena" }
             binding.tvPrice.text = "%.0f zł".format(variant.price)
         }
     }

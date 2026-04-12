@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -54,6 +55,12 @@ class DishDetailFragment : Fragment() {
                     binding.tvCategory.text = dish.category
                     binding.tvDescription.text = dish.description
                     binding.tvRestaurantName.text = "@ ${state.restaurant.name}"
+                    binding.tvRestaurantName.setOnClickListener {
+                        findNavController().navigate(
+                            com.ochotka.app.R.id.action_dishDetail_to_restaurantDetail,
+                            bundleOf("restaurantId" to state.restaurant.id)
+                        )
+                    }
                     binding.tvIngredients.text = dish.ingredients.joinToString(" • ")
 
                     val variantAdapter = VariantAdapter()

@@ -16,7 +16,9 @@ data class ProfileUiState(
     val searchCount: Int = 0,
     val restaurantCount: Int = 0,
     val dishCount: Int = 0,
-    val appVersion: String = ""
+    val appVersion: String = "",
+    val userName: String = "",
+    val profileImagePath: String? = null
 )
 
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
@@ -27,6 +29,16 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState
 
+    fun saveUserName(name: String) {
+        prefs.edit().putString("profile_name", name.trim()).apply()
+        _uiState.value = _uiState.value.copy(userName = name.trim())
+    }
+
+    fun saveProfileImagePath(path: String) {
+        prefs.edit().putString("profile_image_path", path).apply()
+        _uiState.value = _uiState.value.copy(profileImagePath = path)
+    }
+
     fun loadProfile() {
         viewModelScope.launch {
             val allRestaurants = repository.getAllRestaurants()
@@ -36,6 +48,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             val favoriteRestaurants = allRestaurants.filter { it.id in favoriteIds }
 
             val searchCount = prefs.getInt("search_count", 0)
+            val userName = prefs.getString("profile_name", "").orEmpty()
+            val profileImagePath = prefs.getString("profile_image_path", null)
 
             val appVersion = try {
                 val pInfo = getApplication<Application>().packageManager
@@ -51,7 +65,9 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 searchCount = searchCount,
                 restaurantCount = allRestaurants.size,
                 dishCount = allDishes.size,
-                appVersion = appVersion
+                appVersion = appVersion,
+                userName = userName,
+                profileImagePath = profileImagePath
             )
         }
     }

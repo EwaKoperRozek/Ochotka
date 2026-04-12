@@ -14,6 +14,7 @@ import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -21,12 +22,13 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.chip.Chip
+import com.google.android.material.snackbar.Snackbar
 import com.ochotka.app.R
-import com.ochotka.app.adapter.SearchResultAdapter
+import com.ochotka.app.adapter.MatchedDishAdapter
+import com.ochotka.app.common.search.SearchResultItem
 import com.ochotka.app.common.utils.gone
 import com.ochotka.app.common.utils.visible
 import com.ochotka.app.data.model.Restaurant
@@ -41,10 +43,13 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private val viewModel: HomeViewModel by viewModels()
     private val mapViewModel: MapViewModel by viewModels()
 
-    private lateinit var searchAdapter: SearchResultAdapter
+    private lateinit var matchedDishAdapter: MatchedDishAdapter
 
     private var googleMap: GoogleMap? = null
-    private val markerRestaurantMap = mutableMapOf<Marker, Restaurant>()
+    private val markerRestaurantMap = mutableMapOf<Marker, RestaurantMarkerGroup>()
+    private var currentMarkerGroups: List<RestaurantMarkerGroup> = emptyList()
+    private var shouldCenterOnUser = true
+    private var suppressSearchCallback = false
 
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -97,25 +102,27 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     }
 
+    private data class RestaurantMarkerGroup(
+        val restaurant: Restaurant,
+        val matchedDishes: List<SearchResultItem>
+    )
+
     private fun setupAdapters() {
-        searchAdapter = SearchResultAdapter(
-            onDishClick = { item ->
-                findNavController().navigate(
-                    R.id.action_home_to_dishDetail,
-                    bundleOf("dishId" to item.dish.id, "restaurantId" to item.restaurant.id)
-                )
-            },
-            onRestaurantClick = { item ->
-                findNavController().navigate(
-                    R.id.action_home_to_restaurantDetail,
-                    bundleOf("restaurantId" to item.restaurant.id)
-                )
-            }
-        )
-        binding.rvSearchResults.apply {
+        matchedDishAdapter = MatchedDishAdapter { item ->
+            findNavController().navigate(
+                R.id.action_home_to_dishDetail,
+                bundleOf("dishId" to item.dish.id, "restaurantId" to item.restaurant.id)
+            )
+        }
+        binding.rvMatchedDishes.apply {
             layoutManager = LinearLayoutManager(requireContext())
             isNestedScrollingEnabled = false
-            adapter = searchAdapter
+            adapter = matchedDishAdapter
+            if (itemDecorationCount == 0) {
+                addItemDecoration(
+                    DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL)
+                )
+            }
         }
     }
 
@@ -137,6 +144,11 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 )
                 setOnClickListener {
                     if (isChecked) {
+                        if (!binding.etSearch.text.isNullOrBlank()) {
+                            suppressSearchCallback = true
+                            binding.etSearch.text?.clear()
+                            suppressSearchCallback = false
+                        }
                         viewModel.filterByCategory(category)
                     } else {
                         binding.etSearch.text?.clear()
@@ -153,6 +165,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
+                if (suppressSearchCallback) return
                 val query = s?.toString()?.trim() ?: ""
                 viewModel.search(query)
 
@@ -191,12 +204,15 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     binding.tvMapError.text = state.error
                 } else {
                     binding.tvMapError.gone()
-                    addRestaurantMarkers(state.restaurants)
+                    renderMarkerGroups()
                     state.userLocation?.let { loc ->
                         val userLatLng = LatLng(loc.latitude, loc.longitude)
-                        googleMap?.animateCamera(
-                            CameraUpdateFactory.newLatLngZoom(userLatLng, 14f)
-                        )
+                        if (currentMarkerGroups.isEmpty() && shouldCenterOnUser) {
+                            googleMap?.animateCamera(
+                                CameraUpdateFactory.newLatLngZoom(userLatLng, 14f)
+                            )
+                            shouldCenterOnUser = false
+                        }
                     }
                 }
             }
@@ -206,50 +222,78 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private fun showIdle() {
         binding.progressBar.gone()
         binding.tvError.gone()
-        binding.layoutMapContent.gone()
-        binding.layoutSearchContent.gone()
         binding.layoutMapContent.visible()
+        currentMarkerGroups = emptyList()
+        renderMarkerGroups()
+        binding.cardRestaurantInfo.gone()
+        binding.tvMapError.gone()
     }
 
     private fun showSuccess(state: HomeUiState.Success) {
-        binding.progressBar.gone()
-        binding.tvError.gone()
+            binding.progressBar.gone()
+            binding.tvError.gone()
+            syncTopBar(state)
 
-        if (state.searchResults != null) {
-            // Tryb wyszukiwania
-            binding.layoutMapContent.gone()
-            binding.layoutSearchContent.visible()
+            if (state.searchResults != null) {
+                currentMarkerGroups = state.searchResults
+                .groupBy { it.restaurant.id }
+                .values
+                .map { items ->
+                    RestaurantMarkerGroup(
+                        restaurant = items.first().restaurant,
+                        matchedDishes = items.distinctBy { it.dish.id }
+                    )
+                }
+                .sortedBy { it.restaurant.name }
+
+            renderMarkerGroups()
             binding.ivClearSearch.visible()
-
+            binding.layoutMapContent.visible()
             if (state.searchResults.isEmpty()) {
-                binding.tvSearchEmpty.visible()
-                binding.rvSearchResults.gone()
+                binding.cardRestaurantInfo.gone()
+                binding.tvMapError.gone()
+                showNoResultsMessage()
             } else {
-                binding.tvSearchEmpty.gone()
-                binding.rvSearchResults.visible()
-                searchAdapter.submitList(state.searchResults)
+                binding.tvMapError.gone()
             }
         } else {
-            // Tryb główny
-            binding.layoutSearchContent.gone()
             binding.layoutMapContent.visible()
             binding.ivClearSearch.gone()
+            binding.cardRestaurantInfo.gone()
+            currentMarkerGroups = emptyList()
+            renderMarkerGroups()
         }
     }
 
     private fun showError(message: String) {
         binding.progressBar.gone()
-        binding.layoutMapContent.gone()
-        binding.layoutSearchContent.gone()
+        binding.layoutMapContent.visible()
+        currentMarkerGroups = emptyList()
+        renderMarkerGroups()
         binding.tvError.visible()
         binding.tvError.text = message
+    }
+
+    private fun showNoResultsMessage() {
+        Snackbar.make(
+            binding.root,
+            "Nie znaleziono dań. Spróbuj innego zapytania.",
+            Snackbar.LENGTH_SHORT
+        ).show()
     }
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
 
-        val poznan = LatLng(52.4064, 16.9252)
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(poznan, 13f))
+        val savedTarget = viewModel.getSavedCameraTarget()
+        val savedZoom = viewModel.getSavedCameraZoom()
+        if (savedTarget != null && savedZoom != null) {
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(savedTarget, savedZoom))
+            shouldCenterOnUser = false
+        } else {
+            val poznan = LatLng(52.4064, 16.9252)
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(poznan, 13f))
+        }
 
         map.uiSettings.isZoomControlsEnabled = true
         map.uiSettings.isCompassEnabled = true
@@ -263,6 +307,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         map.setOnCameraIdleListener {
             binding.homeMapContainer.parent?.requestDisallowInterceptTouchEvent(false)
+            val position = map.cameraPosition
+            viewModel.saveCameraState(position.target, position.zoom)
+            renderMarkerGroups()
         }
 
         map.setOnMarkerClickListener { marker ->
@@ -294,51 +341,98 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         val state = mapViewModel.uiState.value
         if (state != null && !state.isLoading && state.restaurants.isNotEmpty()) {
-            addRestaurantMarkers(state.restaurants)
+            renderMarkerGroups()
+        }
+        if (currentMarkerGroups.isNotEmpty()) {
+            renderMarkerGroups()
         }
     }
 
-    private fun addRestaurantMarkers(restaurants: List<Restaurant>) {
+    private fun renderMarkerGroups() {
+        addRestaurantMarkers(currentMarkerGroups)
+    }
+
+    private fun addRestaurantMarkers(groups: List<RestaurantMarkerGroup>) {
         val map = googleMap ?: return
         map.clear()
         markerRestaurantMap.clear()
+        binding.cardRestaurantInfo.gone()
 
-        val boundsBuilder = LatLngBounds.Builder()
+        if (groups.isEmpty()) {
+            return
+        }
 
-        restaurants.forEach { restaurant ->
+        val visibleBounds = map.projection?.visibleRegion?.latLngBounds
+
+        groups.forEach { group ->
+            val restaurant = group.restaurant
             val position = LatLng(restaurant.lat, restaurant.lng)
+            if (visibleBounds != null && !visibleBounds.contains(position)) {
+                return@forEach
+            }
+
+            val leadDish = group.matchedDishes.firstOrNull()?.dish
             val marker = map.addMarker(
                 MarkerOptions()
                     .position(position)
-                    .title(restaurant.name)
-                    .snippet(restaurant.address)
+                    .title(leadDish?.name ?: restaurant.name)
+                    .snippet(restaurant.name)
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
             )
             if (marker != null) {
-                markerRestaurantMap[marker] = restaurant
-            }
-            boundsBuilder.include(position)
-        }
-
-        if (restaurants.size > 1) {
-            try {
-                val bounds = boundsBuilder.build()
-                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 120))
-            } catch (_: Exception) {
+                markerRestaurantMap[marker] = group
             }
         }
     }
 
-    private fun showRestaurantInfoCard(restaurant: Restaurant) {
+    private fun showRestaurantInfoCard(group: RestaurantMarkerGroup) {
+        val restaurant = group.restaurant
         binding.cardRestaurantInfo.visible()
         binding.tvRestaurantName.text = restaurant.name
         binding.tvRestaurantAddress.text = restaurant.address
+        binding.tvMatchedDishesLabel.text =
+            "Pasujące dania (${group.matchedDishes.size})"
+        matchedDishAdapter.submitList(group.matchedDishes.take(8))
 
         binding.btnRestaurantDetails.setOnClickListener {
             findNavController().navigate(
                 R.id.action_home_to_restaurantDetail,
                 bundleOf("restaurantId" to restaurant.id)
             )
+        }
+    }
+
+    private fun syncTopBar(state: HomeUiState.Success) {
+        suppressSearchCallback = true
+
+        if (state.selectedCategory != null) {
+            if (!binding.etSearch.text.isNullOrBlank()) {
+                binding.etSearch.text?.clear()
+            }
+            checkCategoryChip(state.selectedCategory)
+            binding.ivClearSearch.gone()
+        } else {
+            binding.chipGroupCategories.clearCheck()
+            val query = state.activeQuery
+            val currentText = binding.etSearch.text?.toString().orEmpty()
+            if (query != currentText) {
+                binding.etSearch.setText(query)
+                binding.etSearch.setSelection(binding.etSearch.text?.length ?: 0)
+            }
+            if (query.isNotBlank()) {
+                binding.ivClearSearch.visible()
+            } else {
+                binding.ivClearSearch.gone()
+            }
+        }
+
+        suppressSearchCallback = false
+    }
+
+    private fun checkCategoryChip(category: String) {
+        for (index in 0 until binding.chipGroupCategories.childCount) {
+            val chip = binding.chipGroupCategories.getChildAt(index) as? Chip ?: continue
+            chip.isChecked = chip.text.toString().equals(category, ignoreCase = true)
         }
     }
 
