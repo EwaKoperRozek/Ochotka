@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary_blue">#2F80ED</color>
+    <color name="primary_blue_dark">#1E5DBA</color>
+
+    <color name="text_primary">#1F2A37</color>
+    <color name="text_secondary">#7A869A</color>
+
+    <color name="background_cream">#FFF9F0</color>
+    <color name="surface">#FFFDF8</color>
+    <color name="white">#FFFFFF</color>
+
+    <color name="chip_bg_selected">#D8ECFF</color>
+    <color name="chip_bg_normal">#FFFFFF</color>
+    <color name="chip_text_selected">#2F80ED</color>
+    <color name="chip_text_normal">#5F6B7A</color>
+    <color name="chip_stroke_selected">#2F80ED</color>
+    <color name="chip_stroke_normal">#D9E2EC</color>
+
+    <color name="badge_green">#5DBB63</color>
+    <color name="badge_spicy">#FF7A45</color>
+    <color name="green_open">#34A853</color>
+
+    <color name="red_closed">#E74C3C</color>
+    <color name="stroke_light">#E6EAF0</color>
+    <color name="placeholder_bg">#E3F2FD</color>
+</resources>

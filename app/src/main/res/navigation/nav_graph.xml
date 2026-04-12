@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.ochotka.app.ui.home.HomeFragment"
+        android:label="Szukaj"
+        tools:layout="@layout/fragment_home">
+        <action
+            android:id="@+id/action_home_to_restaurantDetail"
+            app:destination="@id/restaurantDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+        <action
+            android:id="@+id/action_home_to_dishDetail"
+            app:destination="@id/dishDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/mapFragment"
+        android:name="com.ochotka.app.ui.map.MapFragment"
+        android:label="Mapa"
+        tools:layout="@layout/fragment_map">
+        <action
+            android:id="@+id/action_map_to_restaurantDetail"
+            app:destination="@id/restaurantDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/favoritesFragment"
+        android:name="com.ochotka.app.ui.favorites.FavoritesFragment"
+        android:label="Ulubione"
+        tools:layout="@layout/fragment_favorites">
+        <action
+            android:id="@+id/action_favorites_to_restaurantDetail"
+            app:destination="@id/restaurantDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.ochotka.app.ui.profile.ProfileFragment"
+        android:label="Profil"
+        tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/restaurantDetailFragment"
+        android:name="com.ochotka.app.ui.details.RestaurantDetailFragment"
+        android:label="Restauracja"
+        tools:layout="@layout/fragment_restaurant_detail">
+        <argument
+            android:name="restaurantId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_restaurantDetail_to_dishDetail"
+            app:destination="@id/dishDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/dishDetailFragment"
+        android:name="com.ochotka.app.ui.details.DishDetailFragment"
+        android:label="Danie"
+        tools:layout="@layout/fragment_dish_detail">
+        <argument
+            android:name="dishId"
+            app:argType="string" />
+        <argument
+            android:name="restaurantId"
+            app:argType="string" />
+    </fragment>
+
+</navigation>

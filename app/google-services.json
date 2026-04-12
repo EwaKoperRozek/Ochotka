@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1080029409018",
+    "firebase_url": "https://ochotka-b2695-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "ochotka-b2695",
+    "storage_bucket": "ochotka-b2695.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1080029409018:android:ef96cc1cc449fa64a5a343",
+        "android_client_info": {
+          "package_name": "com.ochotka.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKOLphNEuB25DEgfeSFziK6h1t1nofXao"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ochotka</string>
+    <string name="tagline">Na co masz dziś ochotkę?</string>
+    <string name="search_hint">Wpisz danie…</string>
+    <string name="tab_search">Szukaj</string>
+    <string name="tab_map">Mapa</string>
+    <string name="tab_favorites">Ulubione</string>
+    <string name="tab_profile">Profil</string>
+    <string name="section_featured">Polecane dla Ciebie</string>
+    <string name="section_popular">Popularne teraz</string>
+    <string name="status_open">OTWARTE</string>
+    <string name="status_closed">ZAMKNIĘTE</string>
+    <string name="btn_see_menu">Zobacz menu</string>
+    <string name="empty_favorites">Brak ulubionych ❤️\nDodaj restauracje z listy.</string>
+    <string name="empty_search">Nie znaleziono dań 😕\nSpróbuj innego zapytania.</string>
+    <string name="error_loading">Błąd ładowania danych. Sprawdź plik data.json.</string>
+</resources>
