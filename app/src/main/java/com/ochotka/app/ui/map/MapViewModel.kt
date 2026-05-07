@@ -32,7 +32,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 var userLocation: Location? = null
-                if (locationHelper.hasPermission()) {
+                if (locationHelper.hasPermission() && locationHelper.isLocationEnabled()) {
                     userLocation = locationHelper.getLastLocation()
                 }
                 _uiState.value = MapUiState(
@@ -60,9 +60,29 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
     fun refreshLocation() {
         viewModelScope.launch {
-            if (!locationHelper.hasPermission()) return@launch
-
             val current = _uiState.value ?: return@launch
+
+            if (!locationHelper.hasPermission()) {
+                _uiState.value = current.copy(
+                    error = "Przyznaj dostęp do lokalizacji, aby użyć tej funkcji."
+                )
+                return@launch
+            }
+
+            if (!locationHelper.hasFinePermission()) {
+                _uiState.value = current.copy(
+                    error = "Włącz dokładną lokalizację dla aplikacji, aby pokazać Twoją pozycję."
+                )
+                return@launch
+            }
+
+            if (!locationHelper.isLocationEnabled()) {
+                _uiState.value = current.copy(
+                    error = "Włącz lokalizację w telefonie, aby pobrać aktualną pozycję."
+                )
+                return@launch
+            }
+
             val loc = locationHelper.getCurrentLocation()
                 ?: locationHelper.getLastLocation()
 

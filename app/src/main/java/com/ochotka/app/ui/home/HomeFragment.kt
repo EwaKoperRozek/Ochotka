@@ -1,13 +1,16 @@
 package com.ochotka.app.ui.home
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.provider.Settings
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.ViewCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
@@ -29,6 +32,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.ochotka.app.R
 import com.ochotka.app.adapter.MatchedDishAdapter
 import com.ochotka.app.common.search.SearchResultItem
+import com.ochotka.app.common.utils.LocationHelper
 import com.ochotka.app.common.utils.gone
 import com.ochotka.app.common.utils.visible
 import com.ochotka.app.data.model.Restaurant
@@ -44,11 +48,14 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private val mapViewModel: MapViewModel by viewModels()
 
     private lateinit var matchedDishAdapter: MatchedDishAdapter
+    private val locationHelper by lazy { LocationHelper(requireContext().applicationContext) }
 
     private var googleMap: GoogleMap? = null
     private val markerRestaurantMap = mutableMapOf<Marker, RestaurantMarkerGroup>()
     private var currentMarkerGroups: List<RestaurantMarkerGroup> = emptyList()
     private var shouldCenterOnUser = true
+    private var centerOnUserRequested = false
+    private var awaitingLocationSettings = false
     private var suppressSearchCallback = false
 
     private val locationPermissionLauncher = registerForActivityResult(
@@ -57,6 +64,15 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (granted) {
+            if (!locationHelper.hasFinePermission()) {
+                showEnablePreciseLocationMessage()
+                return@registerForActivityResult
+            }
+            if (!locationHelper.isLocationEnabled()) {
+                showEnableLocationMessage()
+                return@registerForActivityResult
+            }
+            centerOnUserRequested = true
             enableMapLocation()
             mapViewModel.refreshLocation()
         }
@@ -82,6 +98,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         setupSearchBar()
         observeHomeViewModel()
         observeMapViewModel()
+        bringOverlaysToFront()
 
         val mapFragment = childFragmentManager
             .findFragmentById(R.id.homeMapContainer) as SupportMapFragment?
@@ -100,6 +117,30 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             false
         }
 
+    }
+
+    private fun bringOverlaysToFront() {
+        binding.layoutTopOverlay.bringToFront()
+        binding.fabMyLocation.bringToFront()
+        binding.cardRestaurantInfo.bringToFront()
+        binding.progressBarMap.bringToFront()
+        binding.tvMapError.bringToFront()
+
+        ViewCompat.setTranslationZ(binding.layoutTopOverlay, 8f)
+        ViewCompat.setTranslationZ(binding.cardRestaurantInfo, 10f)
+        ViewCompat.setTranslationZ(binding.fabMyLocation, 12f)
+        ViewCompat.setTranslationZ(binding.progressBarMap, 14f)
+        ViewCompat.setTranslationZ(binding.tvMapError, 14f)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (awaitingLocationSettings && locationHelper.isLocationEnabled()) {
+            awaitingLocationSettings = false
+            centerOnUserRequested = true
+            enableMapLocation()
+            mapViewModel.refreshLocation()
+        }
     }
 
     private data class RestaurantMarkerGroup(
@@ -207,11 +248,12 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     renderMarkerGroups()
                     state.userLocation?.let { loc ->
                         val userLatLng = LatLng(loc.latitude, loc.longitude)
-                        if (currentMarkerGroups.isEmpty() && shouldCenterOnUser) {
+                        if (centerOnUserRequested || (currentMarkerGroups.isEmpty() && shouldCenterOnUser)) {
                             googleMap?.animateCamera(
-                                CameraUpdateFactory.newLatLngZoom(userLatLng, 14f)
+                                CameraUpdateFactory.newLatLngZoom(userLatLng, 16f)
                             )
                             shouldCenterOnUser = false
+                            centerOnUserRequested = false
                         }
                     }
                 }
@@ -284,6 +326,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
+        bringOverlaysToFront()
 
         val savedTarget = viewModel.getSavedCameraTarget()
         val savedZoom = viewModel.getSavedCameraZoom()
@@ -464,6 +507,15 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             ) == PackageManager.PERMISSION_GRANTED
 
         if (hasPermission) {
+            if (!locationHelper.hasFinePermission()) {
+                showEnablePreciseLocationMessage()
+                return
+            }
+            if (!locationHelper.isLocationEnabled()) {
+                showEnableLocationMessage()
+                return
+            }
+            centerOnUserRequested = true
             mapViewModel.refreshLocation()
         } else {
             locationPermissionLauncher.launch(
@@ -473,6 +525,30 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 )
             )
         }
+    }
+
+    private fun showEnableLocationMessage() {
+        Snackbar.make(
+            binding.root,
+            "Włącz lokalizację w telefonie, aby pobrać Twoją pozycję.",
+            Snackbar.LENGTH_LONG
+        ).setAction("Ustawienia") {
+            awaitingLocationSettings = true
+            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+        }.show()
+    }
+
+    private fun showEnablePreciseLocationMessage() {
+        Snackbar.make(
+            binding.root,
+            "Włącz dokładną lokalizację dla Ochotki, aby pokazać Twoją pozycję.",
+            Snackbar.LENGTH_LONG
+        ).setAction("Ustawienia") {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = android.net.Uri.fromParts("package", requireContext().packageName, null)
+            }
+            startActivity(intent)
+        }.show()
     }
 
     override fun onDestroyView() {
