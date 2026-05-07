@@ -17,7 +17,6 @@ import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -157,13 +156,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
         binding.rvMatchedDishes.apply {
             layoutManager = LinearLayoutManager(requireContext())
-            isNestedScrollingEnabled = false
+            isNestedScrollingEnabled = true
             adapter = matchedDishAdapter
-            if (itemDecorationCount == 0) {
-                addItemDecoration(
-                    DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL)
-                )
-            }
         }
     }
 
@@ -228,6 +222,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         viewModel.uiState.observe(viewLifecycleOwner) { state ->
             when (state) {
                 is HomeUiState.Idle -> showIdle()
+                is HomeUiState.Loading -> showLoading(state)
                 is HomeUiState.Success -> showSuccess(state)
                 is HomeUiState.Error   -> showError(state.message)
             }
@@ -271,10 +266,17 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         binding.tvMapError.gone()
     }
 
+    private fun showLoading(state: HomeUiState.Loading) {
+        binding.progressBar.visible()
+        binding.tvError.gone()
+        binding.layoutMapContent.visible()
+        syncTopBar(state.selectedCategory, state.activeQuery)
+    }
+
     private fun showSuccess(state: HomeUiState.Success) {
             binding.progressBar.gone()
             binding.tvError.gone()
-            syncTopBar(state)
+            syncTopBar(state.selectedCategory, state.activeQuery)
 
             if (state.searchResults != null) {
                 currentMarkerGroups = state.searchResults
@@ -445,18 +447,18 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-    private fun syncTopBar(state: HomeUiState.Success) {
+    private fun syncTopBar(selectedCategory: String?, activeQuery: String) {
         suppressSearchCallback = true
 
-        if (state.selectedCategory != null) {
+        if (selectedCategory != null) {
             if (!binding.etSearch.text.isNullOrBlank()) {
                 binding.etSearch.text?.clear()
             }
-            checkCategoryChip(state.selectedCategory)
+            checkCategoryChip(selectedCategory)
             binding.ivClearSearch.gone()
         } else {
             binding.chipGroupCategories.clearCheck()
-            val query = state.activeQuery
+            val query = activeQuery
             val currentText = binding.etSearch.text?.toString().orEmpty()
             if (query != currentText) {
                 binding.etSearch.setText(query)

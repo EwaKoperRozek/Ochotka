@@ -30,6 +30,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         searchJob = viewModelScope.launch {
+            _uiState.value = HomeUiState.Loading(
+                selectedCategory = null,
+                activeQuery = query
+            )
             delay(300)
             val results = repository.searchDishes(query)
             _uiState.value = HomeUiState.Success(
@@ -42,6 +46,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun filterByCategory(category: String) {
         viewModelScope.launch {
+            _uiState.value = HomeUiState.Loading(
+                selectedCategory = category,
+                activeQuery = ""
+            )
             val results = repository.searchDishes(category)
             _uiState.value = HomeUiState.Success(
                 searchResults = results,

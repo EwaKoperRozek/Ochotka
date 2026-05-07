@@ -1,0 +1,5 @@
+## Copy this file to local.properties and fill in local secrets.
+## Do not commit the real local.properties file.
+
+sdk.dir=/Users/your-user/Library/Android/sdk
+MAPS_API_KEY=
