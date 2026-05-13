@@ -49,7 +49,7 @@ class RestaurantDetailFragment : Fragment() {
         binding.rvDishes.adapter = dishAdapter
 
         binding.btnBack.setOnClickListener {
-            findNavController().navigateUp()
+            findNavController().popBackStack(com.ochotka.app.R.id.homeFragment, false)
         }
 
         binding.btnFavorite.setOnClickListener {

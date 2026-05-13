@@ -14,6 +14,7 @@ import androidx.core.view.ViewCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -43,7 +44,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: HomeViewModel by viewModels()
+    private val viewModel: HomeViewModel by activityViewModels()
     private val mapViewModel: MapViewModel by viewModels()
 
     private lateinit var matchedDishAdapter: MatchedDishAdapter
@@ -111,6 +112,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         binding.fabMyLocation.setOnClickListener {
             requestLocationOrMove()
         }
+        binding.btnCloseRestaurantCard.setOnClickListener {
+            viewModel.clearSelectedRestaurant()
+            binding.cardRestaurantInfo.gone()
+        }
         binding.homeMapContainer.setOnTouchListener { _, _ ->
             binding.homeMapContainer.parent?.requestDisallowInterceptTouchEvent(true)
             false
@@ -134,11 +139,24 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     override fun onResume() {
         super.onResume()
+        viewModel.restoreLastSuccessStateIfNeeded()
+        viewModel.replayLastSuccessState()
+        restoreCurrentUiState()
         if (awaitingLocationSettings && locationHelper.isLocationEnabled()) {
             awaitingLocationSettings = false
             centerOnUserRequested = true
             enableMapLocation()
             mapViewModel.refreshLocation()
+        }
+    }
+
+    private fun restoreCurrentUiState() {
+        when (val state = viewModel.uiState.value) {
+            is HomeUiState.Idle -> showIdle()
+            is HomeUiState.Loading -> showLoading(state)
+            is HomeUiState.Success -> showSuccess(state)
+            is HomeUiState.Error -> showError(state.message)
+            null -> Unit
         }
     }
 
@@ -243,7 +261,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     renderMarkerGroups()
                     state.userLocation?.let { loc ->
                         val userLatLng = LatLng(loc.latitude, loc.longitude)
-                        if (centerOnUserRequested || (currentMarkerGroups.isEmpty() && shouldCenterOnUser)) {
+                        val hasActiveResults = viewModel.hasActiveSearchResults()
+                        if (centerOnUserRequested || (!hasActiveResults && currentMarkerGroups.isEmpty() && shouldCenterOnUser)) {
                             googleMap?.animateCamera(
                                 CameraUpdateFactory.newLatLngZoom(userLatLng, 16f)
                             )
@@ -277,6 +296,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             binding.progressBar.gone()
             binding.tvError.gone()
             syncTopBar(state.selectedCategory, state.activeQuery)
+            shouldCenterOnUser = false
 
             if (state.searchResults != null) {
                 currentMarkerGroups = state.searchResults
@@ -291,9 +311,11 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 .sortedBy { it.restaurant.name }
 
             renderMarkerGroups()
+            restoreSelectedRestaurantCard()
             binding.ivClearSearch.visible()
             binding.layoutMapContent.visible()
             if (state.searchResults.isEmpty()) {
+                viewModel.clearSelectedRestaurant()
                 binding.cardRestaurantInfo.gone()
                 binding.tvMapError.gone()
                 showNoResultsMessage()
@@ -360,15 +382,18 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         map.setOnMarkerClickListener { marker ->
             val restaurant = markerRestaurantMap[marker]
             if (restaurant != null) {
+                viewModel.selectRestaurant(restaurant.restaurant.id)
                 showRestaurantInfoCard(restaurant)
             }
             true
         }
 
         map.setOnMapClickListener {
+            viewModel.clearSelectedRestaurant()
             binding.cardRestaurantInfo.gone()
         }
 
+        restoreCurrentUiState()
         enableMapLocation()
 
         if (
@@ -388,9 +413,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         if (state != null && !state.isLoading && state.restaurants.isNotEmpty()) {
             renderMarkerGroups()
         }
-        if (currentMarkerGroups.isNotEmpty()) {
-            renderMarkerGroups()
-        }
     }
 
     private fun renderMarkerGroups() {
@@ -401,9 +423,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         val map = googleMap ?: return
         map.clear()
         markerRestaurantMap.clear()
-        binding.cardRestaurantInfo.gone()
 
         if (groups.isEmpty()) {
+            binding.cardRestaurantInfo.gone()
             return
         }
 
@@ -430,8 +452,42 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    private fun restoreSelectedRestaurantCard() {
+        val selectedRestaurantId = viewModel.getSelectedRestaurantId()
+        if (selectedRestaurantId == null) {
+            binding.cardRestaurantInfo.gone()
+            return
+        }
+
+        val selectedGroup = currentMarkerGroups.firstOrNull {
+            it.restaurant.id == selectedRestaurantId
+        }
+
+        if (selectedGroup == null) {
+            viewModel.clearSelectedRestaurant()
+            binding.cardRestaurantInfo.gone()
+            return
+        }
+
+        ensureSelectedRestaurantVisible(selectedGroup)
+        showRestaurantInfoCard(selectedGroup)
+    }
+
+    private fun ensureSelectedRestaurantVisible(group: RestaurantMarkerGroup) {
+        val map = googleMap ?: return
+        val position = LatLng(group.restaurant.lat, group.restaurant.lng)
+        val visibleBounds = map.projection?.visibleRegion?.latLngBounds
+
+        if (visibleBounds == null || !visibleBounds.contains(position)) {
+            val zoom = viewModel.getSavedCameraZoom() ?: 14f
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(position, zoom))
+            renderMarkerGroups()
+        }
+    }
+
     private fun showRestaurantInfoCard(group: RestaurantMarkerGroup) {
         val restaurant = group.restaurant
+        viewModel.selectRestaurant(restaurant.id)
         binding.cardRestaurantInfo.visible()
         binding.tvRestaurantName.text = restaurant.name
         binding.tvRestaurantAddress.text = restaurant.address

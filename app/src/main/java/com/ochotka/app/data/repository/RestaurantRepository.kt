@@ -14,6 +14,8 @@ import com.ochotka.app.data.model.Restaurant
 import com.ochotka.app.data.model.Variant
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withTimeout
 
 class RestaurantRepository private constructor(context: Context) {
@@ -79,6 +81,13 @@ class RestaurantRepository private constructor(context: Context) {
     suspend fun getAllRestaurants(): List<Restaurant> {
         ensureRestaurantsLoaded()
         return restaurants
+    }
+
+    suspend fun prewarmSearchData() = coroutineScope {
+        val restaurantsDeferred = async { ensureRestaurantsLoaded() }
+        val searchIndexDeferred = async { ensureSearchIndexLoaded() }
+        restaurantsDeferred.await()
+        searchIndexDeferred.await()
     }
 
     suspend fun getRestaurantById(id: String): Restaurant? {
