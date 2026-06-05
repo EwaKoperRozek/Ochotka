@@ -98,6 +98,5 @@ This release represents the first complete project version, developed as an acad
    - add your own `app/google-services.json`
 4. Build and run the application on an emulator or physical Android device.
 
-Detailed local setup instructions are available in [SETUP.md](/Users/ewakoperrozek/codecamp/teleinformatyka/Ochotka/SETUP.md).
 
 
