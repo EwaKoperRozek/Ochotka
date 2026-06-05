@@ -100,13 +100,4 @@ This release represents the first complete project version, developed as an acad
 
 Detailed local setup instructions are available in [SETUP.md](/Users/ewakoperrozek/codecamp/teleinformatyka/Ochotka/SETUP.md).
 
-## Security
 
-API keys and Firebase configuration files should not be committed to version control.
-
-Recommended setup:
-
-- keep `MAPS_API_KEY` in `local.properties`
-- keep `google-services.json` only in the local app directory
-- never commit Firebase Admin SDK service account files
-- restrict Google Maps keys by Android package name and SHA-1 fingerprint
